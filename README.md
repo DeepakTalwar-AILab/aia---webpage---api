@@ -34,7 +34,18 @@ A simple, elegant webpage for summarizing text using OpenAI's GPT-4 API with cus
    # OR download and extract ZIP file
    ```
 
-2. **Configure API Key**
+2. **Configure API Key (Choose one method)**
+
+   **Method A: Using .env file (Recommended)**
+   ```bash
+   # Run the setup script to create .env file
+   node setup-env.js
+   
+   # Edit .env file and add your OpenAI API key
+   # Replace 'your-openai-api-key-here' with your actual key
+   ```
+
+   **Method B: Using config.js file**
    ```bash
    # Copy the example config file
    cp config.example.js config.js
@@ -49,6 +60,8 @@ A simple, elegant webpage for summarizing text using OpenAI's GPT-4 API with cus
    ├── index.html          # Main webpage
    ├── config.js           # Your API key configuration (create from example)
    ├── config.example.js   # Template for API key setup
+   ├── .env                # Environment variables (created by setup-env.js)
+   ├── setup-env.js        # Setup script for environment variables
    ├── .gitignore          # Keeps your API key secure
    ├── styles/
    │   ├── main.css        # Base styles and layout
@@ -58,6 +71,7 @@ A simple, elegant webpage for summarizing text using OpenAI's GPT-4 API with cus
    ├── scripts/
    │   ├── app.js          # Main application logic
    │   ├── api.js          # OpenAI API integration
+   │   ├── env-loader.js   # Environment variable loader
    │   ├── themes.js       # Theme switching functionality (coming in milestone 2)
    │   └── cost-calculator.js # Cost estimation logic
    └── README.md           # This file

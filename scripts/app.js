@@ -2,6 +2,7 @@
 import { OpenAIAPI } from './api.js';
 import { CostCalculator } from './cost-calculator.js';
 import { CONFIG } from '../config.js';
+import { envLoader } from './env-loader.js';
 
 class TextSummarizer {
     constructor() {
@@ -12,7 +13,7 @@ class TextSummarizer {
         this.initializeElements();
         this.attachEventListeners();
         this.loadSessionData();
-        this.checkAPIKey();
+        this.checkAPIKey().catch(console.error);
     }
 
     initializeElements() {
@@ -73,8 +74,19 @@ class TextSummarizer {
         }));
     }
 
-    checkAPIKey() {
-        // Try to get API key from config first
+    async checkAPIKey() {
+        // Wait for environment variables to load
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Try to get API key from .env file first
+        const envApiKey = envLoader.get('OPENAI_API_KEY');
+        if (envApiKey && envApiKey !== 'your-openai-api-key-here') {
+            this.api.setApiKey(envApiKey);
+            console.log('✅ API key loaded from .env file');
+            return;
+        }
+
+        // Try to get API key from config.js as fallback
         if (CONFIG.OPENAI_API_KEY && CONFIG.OPENAI_API_KEY !== 'your-openai-api-key-here') {
             this.api.setApiKey(CONFIG.OPENAI_API_KEY);
             console.log('✅ API key loaded from config.js');
@@ -91,8 +103,8 @@ class TextSummarizer {
 
         // Show helpful error if no key found
         this.showError(
-            'Please add your OpenAI API key to config.js file. ' +
-            'Replace "your-openai-api-key-here" with your actual key.'
+            'Please add your OpenAI API key to .env file or config.js file. ' +
+            'Run "node setup-env.js" to create .env file template.'
         );
         this.summarizeBtn.disabled = true;
     }
