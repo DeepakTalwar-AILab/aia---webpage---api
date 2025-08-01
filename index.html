@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Text Summarizer</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-top">
+                <div class="branding">
+                    <h1>OpenAI Text Summarizer</h1>
+                    <p class="subtitle">Transform your text with AI-powered summaries</p>
+                </div>
+                <div class="theme-selector">
+                    <label for="theme-select" class="theme-label">🎨 Theme:</label>
+                    <select id="theme-select" class="theme-select">
+                        <option value="default">Default</option>
+                        <option value="bain">Bain & Company</option>
+                        <option value="mckinsey">McKinsey & Company</option>
+                        <option value="bcg">Boston Consulting Group</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="input-section">
+                <label for="text-input" class="input-label">📝 Text to Summarize</label>
+                <textarea 
+                    id="text-input" 
+                    class="text-input"
+                    placeholder="Paste your text here..."
+                    rows="12"
+                ></textarea>
+                
+                <div class="temperature-control">
+                    <label for="temperature-slider" class="control-label">
+                        🎚️ Creativity: <span id="temperature-value">5</span>
+                        <span id="temperature-description" class="temperature-description">Balanced</span>
+                    </label>
+                    <input 
+                        type="range" 
+                        id="temperature-slider" 
+                        class="slider enhanced-slider"
+                        min="1" 
+                        max="10" 
+                        value="5"
+                    >
+                    <div class="slider-labels">
+                        <span>📊 Factual</span>
+                        <span>🎨 Creative</span>
+                    </div>
+                </div>
+
+                <button id="summarize-btn" class="summarize-btn">
+                    🚀 Summarize Text
+                </button>
+            </div>
+
+            <div class="output-section">
+                <div class="output-header">
+                    <h2>✨ Summary</h2>
+                    <div id="actual-cost" class="actual-cost"></div>
+                </div>
+                <div id="summary-output" class="summary-output">
+                    <p class="placeholder">Your AI-powered summary will appear here...</p>
+                </div>
+            </div>
+
+            <div class="sidebar-info">
+                <div class="cost-info">
+                    <div class="cost-header">
+                        <h3>💰 Cost</h3>
+                        <button id="cost-details-toggle" class="details-toggle">Details</button>
+                    </div>
+                    <div class="cost-estimate">
+                        <span class="cost-label">Estimate:</span>
+                        <span id="cost-estimate">$0.00</span>
+                    </div>
+                    <div id="cost-breakdown" class="cost-breakdown hidden">
+                        <div class="breakdown-item">
+                            <span>Tokens: <span id="input-tokens">0</span></span>
+                            <span id="input-cost">$0.00</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Words: <span id="word-count">0</span></span>
+                            <span id="cost-per-word">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="session-info">
+                    <div class="session-header">
+                        <h3>📊 Session</h3>
+                        <div class="session-controls">
+                            <button id="clear-session" class="clear-btn">Clear</button>
+                            <button id="session-details-toggle" class="details-toggle">Details</button>
+                        </div>
+                    </div>
+                    <div class="session-summary">
+                        <div class="session-cost">
+                            <span class="session-label">Total:</span>
+                            <span id="session-total">$0.00</span>
+                        </div>
+                        <div class="session-count">
+                            <span class="session-label">Count:</span>
+                            <span id="summary-count">0</span>
+                        </div>
+                    </div>
+                    <div id="session-breakdown" class="session-breakdown hidden">
+                        <div class="breakdown-stats">
+                            <div class="stat-item">
+                                <span>Input Tokens:</span>
+                                <span id="total-input-tokens">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Output Tokens:</span>
+                                <span id="total-output-tokens">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Avg Cost:</span>
+                                <span id="avg-cost">$0.00</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Started:</span>
+                                <span id="session-start">Now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Generating summary...</p>
+        </div>
+
+        <div id="error-message" class="error-message hidden"></div>
+    </div>
+
+    <script>
+        // Embedded JavaScript - No modules needed
+                    const API_KEY = 'your-openai-api-key-here'; // Replace with your actual API key
+        
+        class TextSummarizer {
+            constructor() {
+                this.sessionTotal = 0;
+                this.summaryCount = 0;
+                this.totalInputTokens = 0;
+                this.totalOutputTokens = 0;
+                this.sessionStartTime = Date.now();
+                this.initializeElements();
+                this.attachEventListeners();
+                this.loadSessionData();
+                this.loadTheme();
+                this.updateTemperatureDescription(5);
+                console.log('✅ App loaded successfully!');
+            }
+
+            initializeElements() {
+                // Input elements
+                this.textInput = document.getElementById('text-input');
+                this.temperatureSlider = document.getElementById('temperature-slider');
+                this.temperatureValue = document.getElementById('temperature-value');
+                this.temperatureDescription = document.getElementById('temperature-description');
+                this.summarizeBtn = document.getElementById('summarize-btn');
+                
+                // Output elements
+                this.summaryOutput = document.getElementById('summary-output');
+                this.actualCost = document.getElementById('actual-cost');
+                
+                // Cost elements
+                this.costEstimate = document.getElementById('cost-estimate');
+                this.costDetailsToggle = document.getElementById('cost-details-toggle');
+                this.costBreakdown = document.getElementById('cost-breakdown');
+                this.inputTokens = document.getElementById('input-tokens');
+                this.inputCost = document.getElementById('input-cost');
+                this.wordCount = document.getElementById('word-count');
+                this.costPerWord = document.getElementById('cost-per-word');
+                
+                // Session elements
+                this.sessionTotalElement = document.getElementById('session-total');
+                this.summaryCountElement = document.getElementById('summary-count');
+                this.sessionDetailsToggle = document.getElementById('session-details-toggle');
+                this.sessionBreakdown = document.getElementById('session-breakdown');
+                this.clearSessionBtn = document.getElementById('clear-session');
+                this.totalInputTokensElement = document.getElementById('total-input-tokens');
+                this.totalOutputTokensElement = document.getElementById('total-output-tokens');
+                this.avgCostElement = document.getElementById('avg-cost');
+                this.sessionStartElement = document.getElementById('session-start');
+                
+                // UI elements
+                this.loading = document.getElementById('loading');
+                this.errorMessage = document.getElementById('error-message');
+                
+                // Theme elements
+                this.themeSelect = document.getElementById('theme-select');
+            }
+
+            attachEventListeners() {
+                // Temperature slider with enhanced feedback
+                this.temperatureSlider.addEventListener('input', (e) => {
+                    const value = parseInt(e.target.value);
+                    this.temperatureValue.textContent = value;
+                    this.updateTemperatureDescription(value);
+                    this.updateTemperatureZones(value);
+                });
+
+                // Text input for cost estimation
+                this.textInput.addEventListener('input', () => {
+                    this.updateCostEstimate();
+                });
+
+                // Summarize button
+                this.summarizeBtn.addEventListener('click', () => {
+                    this.handleSummarize();
+                });
+
+                // Cost details toggle
+                this.costDetailsToggle.addEventListener('click', () => {
+                    this.toggleCostDetails();
+                });
+
+                // Session details toggle
+                this.sessionDetailsToggle.addEventListener('click', () => {
+                    this.toggleSessionDetails();
+                });
+
+                // Clear session button
+                this.clearSessionBtn.addEventListener('click', () => {
+                    this.clearSession();
+                });
+
+                // Theme selector
+                this.themeSelect.addEventListener('change', (e) => {
+                    this.changeTheme(e.target.value);
+                });
+            }
+
+            loadSessionData() {
+                const saved = localStorage.getItem('summarizer_session');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    this.sessionTotal = data.total || 0;
+                    this.summaryCount = data.count || 0;
+                    this.totalInputTokens = data.inputTokens || 0;
+                    this.totalOutputTokens = data.outputTokens || 0;
+                    this.sessionStartTime = data.startTime || Date.now();
+                    this.updateSessionDisplay();
+                }
+            }
+
+            saveSessionData() {
+                localStorage.setItem('summarizer_session', JSON.stringify({
+                    total: this.sessionTotal,
+                    count: this.summaryCount,
+                    inputTokens: this.totalInputTokens,
+                    outputTokens: this.totalOutputTokens,
+                    startTime: this.sessionStartTime,
+                    timestamp: Date.now()
+                }));
+            }
+
+            updateCostEstimate() {
+                const text = this.textInput.value.trim();
+                if (text) {
+                    const words = text.split(/\s+/).length;
+                    const inputTokens = Math.ceil(text.length / 4) + 50;
+                    const outputTokens = Math.ceil(inputTokens * 0.3);
+                    const inputTokenCost = (inputTokens * 0.01) / 1000;
+                    const outputTokenCost = (outputTokens * 0.03) / 1000;
+                    const totalCost = (inputTokenCost + outputTokenCost) * 1.1;
+                    const costPerWordValue = totalCost / words;
+                    
+                    // Update main estimate
+                    this.costEstimate.textContent = `$${Math.max(0.0001, totalCost).toFixed(4)}`;
+                    
+                    // Update detailed breakdown
+                    this.inputTokens.textContent = inputTokens.toLocaleString();
+                    this.inputCost.textContent = `$${inputTokenCost.toFixed(4)}`;
+                    this.wordCount.textContent = words.toLocaleString();
+                    this.costPerWord.textContent = `$${costPerWordValue.toFixed(6)}`;
+                } else {
+                    this.costEstimate.textContent = '$0.00';
+                    this.inputTokens.textContent = '0';
+                    this.inputCost.textContent = '$0.00';
+                    this.wordCount.textContent = '0';
+                    this.costPerWord.textContent = '$0.00';
+                }
+            }
+
+            async handleSummarize() {
+                const text = this.textInput.value.trim();
+                
+                if (!text) {
+                    this.showError('Please enter some text to summarize.');
+                    return;
+                }
+
+                try {
+                    this.showLoading(true);
+                    this.summarizeBtn.disabled = true;
+
+                    const temperature = parseInt(this.temperatureSlider.value) / 10;
+
+                    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: 'gpt-4-turbo-preview',
+                            messages: [
+                                {
+                                    role: 'system',
+                                    content: 'You are a professional text summarizer. Create clear, concise summaries that capture the key points and main ideas.'
+                                },
+                                {
+                                    role: 'user',
+                                    content: `Please provide a summary of the following text:\\n\\n${text}`
+                                }
+                            ],
+                            temperature: Math.max(0.1, temperature),
+                            max_tokens: Math.max(100, Math.min(800, Math.ceil(text.length / 4 * 0.3)))
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const summary = data.choices[0].message.content.trim();
+                    const cost = ((data.usage.prompt_tokens * 0.01) + (data.usage.completion_tokens * 0.03)) / 1000;
+                    
+                    this.displaySummary(summary);
+                    this.updateActualCost(cost);
+                    this.addToSessionTotal(cost, data.usage.prompt_tokens, data.usage.completion_tokens);
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.showError(`Error: ${error.message}`);
+                } finally {
+                    this.showLoading(false);
+                    this.summarizeBtn.disabled = false;
+                }
+            }
+
+            displaySummary(summary) {
+                this.summaryOutput.innerHTML = `<div class="content">${summary}</div>`;
+            }
+
+            updateActualCost(cost) {
+                this.actualCost.textContent = `Actual cost: $${cost.toFixed(4)}`;
+            }
+
+            addToSessionTotal(cost, inputTokens, outputTokens) {
+                this.sessionTotal += cost;
+                this.summaryCount += 1;
+                this.totalInputTokens += inputTokens || 0;
+                this.totalOutputTokens += outputTokens || 0;
+                this.updateSessionDisplay();
+                this.saveSessionData();
+            }
+
+            updateSessionDisplay() {
+                this.sessionTotalElement.textContent = `$${this.sessionTotal.toFixed(4)}`;
+                this.summaryCountElement.textContent = this.summaryCount.toString();
+                
+                // Update session breakdown details
+                this.totalInputTokensElement.textContent = this.totalInputTokens.toLocaleString();
+                this.totalOutputTokensElement.textContent = this.totalOutputTokens.toLocaleString();
+                
+                const avgCost = this.summaryCount > 0 ? this.sessionTotal / this.summaryCount : 0;
+                this.avgCostElement.textContent = `$${avgCost.toFixed(4)}`;
+                
+                const timeAgo = this.formatTimeAgo(this.sessionStartTime);
+                this.sessionStartElement.textContent = timeAgo;
+            }
+
+            updateTemperatureDescription(value) {
+                let description, color;
+                
+                if (value <= 3) {
+                    description = 'Factual & Precise';
+                    color = '#1e40af';
+                } else if (value <= 7) {
+                    description = 'Balanced & Professional';
+                    color = '#059669';
+                } else {
+                    description = 'Creative & Engaging';
+                    color = '#d97706';
+                }
+                
+                this.temperatureDescription.textContent = description;
+                this.temperatureDescription.style.background = color;
+            }
+
+            updateTemperatureZones(value) {
+                // Temperature zones were removed for compact layout
+                // This function is kept for theme compatibility
+                return;
+            }
+
+            toggleCostDetails() {
+                const isHidden = this.costBreakdown.classList.contains('hidden');
+                this.costBreakdown.classList.toggle('hidden');
+                this.costDetailsToggle.textContent = isHidden ? 'Hide Details' : 'Show Details';
+            }
+
+            toggleSessionDetails() {
+                const isHidden = this.sessionBreakdown.classList.contains('hidden');
+                this.sessionBreakdown.classList.toggle('hidden');
+                this.sessionDetailsToggle.textContent = isHidden ? 'Hide Details' : 'Show Details';
+            }
+
+            clearSession() {
+                if (confirm('Are you sure you want to clear all session data?')) {
+                    this.sessionTotal = 0;
+                    this.summaryCount = 0;
+                    this.totalInputTokens = 0;
+                    this.totalOutputTokens = 0;
+                    this.sessionStartTime = Date.now();
+                    this.updateSessionDisplay();
+                    this.saveSessionData();
+                }
+            }
+
+            formatTimeAgo(timestamp) {
+                const now = Date.now();
+                const diffMs = now - timestamp;
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                
+                if (diffHours > 0) {
+                    return `${diffHours}h ${diffMinutes}m ago`;
+                } else if (diffMinutes > 0) {
+                    return `${diffMinutes}m ago`;
+                } else {
+                    return 'Just now';
+                }
+            }
+
+            // Theme Management
+            loadTheme() {
+                const savedTheme = localStorage.getItem('summarizer_theme') || 'default';
+                this.themeSelect.value = savedTheme;
+                this.applyTheme(savedTheme);
+            }
+
+            changeTheme(themeName) {
+                this.applyTheme(themeName);
+                localStorage.setItem('summarizer_theme', themeName);
+                console.log(`🎨 Theme changed to: ${themeName}`);
+            }
+
+            applyTheme(themeName) {
+                // Remove existing theme classes and stylesheets
+                document.body.className = document.body.className.replace(/theme-\\w+/g, '');
+                this.removeThemeStylesheets();
+
+                if (themeName !== 'default') {
+                    // Add theme class to body
+                    document.body.classList.add(`theme-${themeName}`);
+                    
+                    // Load theme stylesheet
+                    this.loadThemeStylesheet(themeName);
+                }
+
+                // Update temperature description after theme change
+                setTimeout(() => {
+                    this.updateTemperatureDescription(parseInt(this.temperatureSlider.value));
+                }, 100);
+            }
+
+            loadThemeStylesheet(themeName) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = `styles/theme-${themeName}.css`;
+                link.id = `theme-${themeName}-css`;
+                document.head.appendChild(link);
+            }
+
+            removeThemeStylesheets() {
+                const themeLinks = document.querySelectorAll('link[id^="theme-"]');
+                themeLinks.forEach(link => link.remove());
+            }
+
+            showLoading(show) {
+                this.loading.classList.toggle('hidden', !show);
+            }
+
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    this.errorMessage.classList.add('hidden');
+                }, 5000);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new TextSummarizer();
+        });
+
+        // Helper function to clear session data
+        window.clearSessionData = () => {
+            localStorage.removeItem('summarizer_session');
+            location.reload();
+        };
+
+        // Helper function to clear theme data
+        window.clearThemeData = () => {
+            localStorage.removeItem('summarizer_theme');
+            location.reload();
+        };
+
+        // Helper function to show current session stats (for debugging)
+        window.showSessionStats = () => {
+            const saved = localStorage.getItem('summarizer_session');
+            if (saved) {
+                console.log('Session Stats:', JSON.parse(saved));
+            } else {
+                console.log('No session data found');
+            }
+        };
+
+        // Helper function to show current theme (for debugging)
+        window.showCurrentTheme = () => {
+            const theme = localStorage.getItem('summarizer_theme') || 'default';
+            console.log('Current Theme:', theme);
+        };
+    </script>
+</body>
+</html> 

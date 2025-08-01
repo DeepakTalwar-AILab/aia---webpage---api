@@ -1,0 +1,22 @@
+# Environment variables and API keys
+config.js
+.env
+.env.local
+
+# Node modules (if you add any later)
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
