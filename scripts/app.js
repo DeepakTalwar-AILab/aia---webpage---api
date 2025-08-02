@@ -136,7 +136,7 @@ class TextSummarizer {
             this.showLoading(true);
             this.summarizeBtn.disabled = true;
 
-            const temperature = parseInt(this.temperatureSlider.value);
+            const temperature = parseFloat(this.temperatureSlider.value);
             const mappedTemperature = this.mapTemperature(temperature);
 
             const result = await this.api.summarizeText(text, mappedTemperature);

@@ -22,7 +22,7 @@ export class OpenAIAPI {
         const prompt = this.buildSummarizationPrompt(text, temperature);
         
         try {
-            const response = await fetch(`${this.baseUrl}/chat/completions`, {
+            const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -68,6 +68,26 @@ export class OpenAIAPI {
         }
     }
 
+    async fetchWithTimeout(resource, options = {}, timeout = 30000) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+
+        try {
+            const response = await fetch(resource, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(id);
+            return response;
+        } catch (error) {
+            clearTimeout(id);
+            if (error.name === 'AbortError') {
+                throw new Error('Request timed out. Please try again.');
+            }
+            throw error;
+        }
+    }
+    
     buildSummarizationPrompt(text, temperature) {
         const style = temperature < 0.3 ? 'factual and objective' : 
                      temperature < 0.7 ? 'balanced and informative' : 

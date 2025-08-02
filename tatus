@@ -1,0 +1,3 @@
+[33mf40a0bf[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m  Fix API key configuration - use config.js module
+[33mc978294[m  Set BCG cyber theme as default
+[33m28345ff[m  Initial commit: OpenAI Text Summarizer with Revolutionary Themes (Security Ready)
